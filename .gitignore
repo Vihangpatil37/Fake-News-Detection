@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+
+# Ignore dataset to save space, the python script will redownload it
+data/dataset.csv
