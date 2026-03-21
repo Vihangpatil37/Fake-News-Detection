@@ -15,12 +15,17 @@
             <div class="col-lg-8 col-xl-7">
                 <div class="glass-card p-4 p-md-5 text-center">
                     
-                    {% if prediction == 'REAL' %}
+                    {% if prediction == 'REAL' or prediction == 'REAL (Corrected)' %}
                         <div class="result-icon text-success mb-3">
                             <i class="fa-solid fa-circle-check"></i>
                         </div>
                         <h1 class="display-4 fw-bold text-success mb-1">REAL NEWS</h1>
                         <p class="text-muted mb-4 fs-5">This article appears to be factually consistent and authentic.</p>
+                        {% if prediction == 'REAL (Corrected)' %}
+                            <div class="badge bg-warning text-dark mb-4 py-2 px-3 rounded-pill fw-bold">
+                                <i class="fa-solid fa-bolt me-2"></i> ML flagged as fake, but Live News verified it!
+                            </div>
+                        {% endif %}
                     {% else %}
                         <div class="result-icon text-danger mb-3">
                             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -28,6 +33,7 @@
                         <h1 class="display-4 fw-bold text-danger mb-1">FAKE NEWS</h1>
                         <p class="text-muted mb-4 fs-5">We detected patterns commonly found in misinformation or fabricated stories.</p>
                     {% endif %}
+
                     
                     <div class="row g-4 mt-2 mb-4 text-start">
                         <div class="col-md-6">
@@ -55,6 +61,26 @@
                             </div>
                         </div>
                     </div>
+
+                    {% if verification_status == 'Verified by Live News' %}
+                    <div class="row mt-4 text-start">
+                        <div class="col-12">
+                            <div class="p-4 rounded-4 border-2 border-success bg-success-subtle shadow-sm">
+                                <h6 class="text-success text-uppercase fw-bold mb-3">
+                                    <i class="fa-solid fa-globe me-2"></i>Live Verification Result
+                                </h6>
+                                <p class="mb-3">We found matching reports in recent news:</p>
+                                <div class="bg-white p-3 rounded-3 border">
+                                    <h6 class="fw-bold mb-1">{{ live_title }}</h6>
+                                    <a href="{{ live_url }}" target="_blank" class="text-primary small" style="text-decoration: none;">
+                                        Read full report on GNews <i class="fa-solid fa-external-link ms-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
 
                     <div class="text-start bg-light p-4 rounded-4 shadow-sm border mt-4 position-relative">
                         <i class="fa-solid fa-quote-left text-muted position-absolute top-0 start-0 ms-3 mt-3 opacity-25" style="font-size: 2.5rem;"></i>

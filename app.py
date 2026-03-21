@@ -6,8 +6,8 @@ app = Flask(__name__)
 
 # Load models and vectorizer at startup
 MODEL_DIR = "model"
-# We will use the SVM model as it typically performs very well for text classification and is faster to inference, but user can change it.
-# Let's say we prefer SVM but we will load both and pick SVM by default.
+GNEWS_API_KEY = os.environ.get("GNEWS_API_KEY", "") # Placeholder - users should set this on Render
+
 try:
     vectorizer = joblib.load(os.path.join(MODEL_DIR, "tfidf_vectorizer.pkl"))
     svm_model = joblib.load(os.path.join(MODEL_DIR, "svm_model.pkl"))
@@ -16,6 +16,29 @@ try:
 except Exception as e:
     print(f"Error loading models: {e}")
     models_loaded = False
+
+def check_live_news(query):
+    """
+    Search for the query on GNews API to see if it exists in recent reputable news.
+    Returns: (found_count, top_article_title, top_article_url)
+    """
+    if not GNEWS_API_KEY:
+        return 0, None, None
+    
+    url = f"https://gnews.io/api/v4/search?q={query}&lang=en&max=3&apikey={GNEWS_API_KEY}"
+    try:
+        import requests
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            articles = data.get("articles", [])
+            if articles:
+                return len(articles), articles[0]["title"], articles[0]["url"]
+    except Exception as e:
+        print(f"GNews API error: {e}")
+    
+    return 0, None, None
+
 
 @app.route("/", methods=["GET"])
 def home():
@@ -47,17 +70,32 @@ def predict():
     prediction_num = model.predict(text_tfidf)[0]
     prediction = "REAL" if prediction_num == 1 else "FAKE"
     
-    # Get confidence if available
+    # Get confidence
     confidence = 0.0
     if hasattr(model, "predict_proba"):
         probabilities = model.predict_proba(text_tfidf)[0]
         confidence = max(probabilities) * 100
-        
+    
+    # Live Verification (GNews)
+    live_count, live_title, live_url = check_live_news(text)
+    
+    # Logic Correction: If ML says FAKE but GNews finds it, we upgrade the status
+    verification_status = "Unverified"
+    if live_count > 0:
+        verification_status = "Verified by Live News"
+        if prediction == "FAKE":
+            prediction = "REAL (Corrected)"
+            confidence = 90.0 # High confidence if verified by news
+            
     return render_template("result.html", 
                            prediction=prediction, 
                            confidence=f"{confidence:.2f}%", 
                            model_name=model_name, 
-                           original_text=text)
+                           original_text=text,
+                           verification_status=verification_status,
+                           live_url=live_url,
+                           live_title=live_title)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
