@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # Load models and vectorizer at startup
 MODEL_DIR = "model"
-GNEWS_API_KEY = os.environ.get("GNEWS_API_KEY", "") # Placeholder - users should set this on Render
+GNEWS_API_KEY = "03dba3d2cf6f3fc1c03e8b80abac9d4e" # Use the provided key directly
 
 try:
     vectorizer = joblib.load(os.path.join(MODEL_DIR, "tfidf_vectorizer.pkl"))
@@ -77,15 +77,16 @@ def predict():
         confidence = max(probabilities) * 100
     
     # Live Verification (GNews)
-    live_count, live_title, live_url = check_live_news(text)
+    # Use only the first 100 characters or the first sentence for a better search
+    search_query = text.split('.')[0][:100] 
+    live_count, live_title, live_url = check_live_news(search_query)
     
-    # Logic Correction: If ML says FAKE but GNews finds it, we upgrade the status
+    # Logic: Show verification status, but don't overwrite ML prediction
     verification_status = "Unverified"
     if live_count > 0:
         verification_status = "Verified by Live News"
-        if prediction == "FAKE":
-            prediction = "REAL (Corrected)"
-            confidence = 90.0 # High confidence if verified by news
+        # Removed the logic that upgrades FAKE to REAL based on GNews
+        # so that it "still shows fake news" as requested.
             
     return render_template("result.html", 
                            prediction=prediction, 
